@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f3d3e">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>Auto Scheduler</title>
+<style>
+:root{--ink:#14201f;--muted:#66706e;--line:#dfdbd2;--bg:#f6f4ef;--card:#fff;--teal:#0f3d3e;--amber:#f4b942;--ok:#1f7a4d;--bad:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:76px}
+header{background:var(--teal);color:#fff;padding:18px 18px 16px}
+header h1{margin:0;font-size:20px;letter-spacing:.2px}
+header p{margin:4px 0 0;font-size:13px;opacity:.8}
+main{padding:16px;max-width:560px;margin:0 auto}
+h2{font-size:17px;margin:4px 0 12px}
+.empty{color:var(--muted);font-size:14px;padding:24px 0;text-align:center}
+.watch{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px}
+.watch .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.watch b{font-size:15px}
+.meta{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5}
+.pill{font-size:11px;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.on{background:#e3f2ea;color:var(--ok)}.off{background:#eee;color:var(--muted)}
+.row{display:flex;gap:8px;margin-top:10px}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:15px;background:#fff;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.two>*{min-width:0}
+button{font:inherit;font-size:14px;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+button.main{background:var(--teal);color:#fff;border-color:var(--teal);width:100%;padding:13px;font-size:15px;margin-top:16px}
+button.danger{color:var(--bad)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:7px 12px;background:#fff;font-size:14px}
+.chip input{width:auto;margin:0}
+.note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+.tip{background:#fdf3dc;border-left:3px solid var(--amber);padding:10px 12px;border-radius:6px;font-size:13px;margin-top:12px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{border:0;border-radius:0;padding:12px 4px;font-size:12px;color:var(--muted);background:none}
+nav button.act{color:var(--teal);font-weight:600;box-shadow:inset 0 3px 0 var(--amber)}
+.screen{display:none}.screen.show{display:block}
+#installBtn{display:none;margin-top:10px;background:var(--amber);border-color:var(--amber);color:var(--ink);width:100%}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;display:none}
+</style></head><body>
+<header><h1>Auto Scheduler</h1><p id="subtitle">You'll know the moment booking opens.</p></header>
+
+<main>
+<section class="screen show" id="s-home">
+ <h2>My watches</h2>
+ <div id="list"></div>
+ <button id="installBtn">Install app on this phone</button>
+</section>
+
+<section class="screen" id="s-add">
+ <h2>Add a watch</h2>
+ <label>What are you booking?</label>
+ <select id="f-type"><option value="movie">Movie</option><option value="temple">Temple seva / darshan</option><option value="bus">Bus</option><option value="train">Train</option><option value="flight">Flight</option></select>
+ <label id="l-name">Movie name</label><input id="f-name" placeholder="e.g. Pushpa 3">
+ <label id="l-place">Theatre & city</label><input id="f-place" placeholder="e.g. PVR, Hyderabad">
+ <div class="two">
+  <div><label>Date</label><input id="f-date" type="date"></div>
+  <div><label id="l-time">Show time</label><input id="f-time" placeholder="e.g. 9:30 PM"></div>
+ </div>
+ <div class="two">
+  <div><label id="l-count">Tickets</label><select id="f-count"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
+  <div><label id="l-pref">Preferred row</label><input id="f-pref" placeholder="e.g. D"></div>
+ </div>
+ <label>Backup choices (optional, comma separated)</label>
+ <input id="f-backup" placeholder="e.g. INOX GVK 10 PM, AMB Cinemas 9 PM">
+ <label>Booking page link (opens when you tap the alert)</label>
+ <input id="f-link" type="url" placeholder="https://...">
+ <button class="main" id="saveBtn">Start watching</button>
+ <p class="note">Only booking choices are saved. Never enter passwords, OTPs, card numbers or full Aadhaar numbers.</p>
+</section>
+
+<section class="screen" id="s-wallet">
+ <h2>My cards & wallets</h2>
+ <p class="note" style="margin-top:0">Tick names only. We use these to suggest the best offer in your alert.</p>
+ <div class="chips" id="wallets"></div>
+ <div class="tip" id="offerTip"></div>
+</section>
+
+<section class="screen" id="s-settings">
+ <h2>Settings</h2>
+ <label>Your ntfy topic (same as in the ntfy app)</label>
+ <input id="set-topic" placeholder="e.g. chandu-autosched-7391">
+ <label>Quiet hours</label>
+ <div class="two">
+  <div><input id="set-q1" type="time" value="23:00"></div>
+  <div><input id="set-q2" type="time" value="07:00"></div>
+ </div>
+ <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="set-urgent" type="checkbox" style="width:auto" checked> Ignore quiet hours for urgent bookings</label>
+ <button class="main" id="setSave">Save settings</button>
+ <button id="testBtn" style="width:100%;margin-top:10px">Send me a test alert</button>
+ <p class="note">Your watches are saved on this phone only for now. In the next step we connect them to your cloud watcher.</p>
+ <button class="danger" id="wipeBtn" style="width:100%;margin-top:18px">Delete all my data from this phone</button>
+</section>
+</main>
+
+<nav>
+ <button class="act" data-s="home">Watches</button>
+ <button data-s="add">Add</button>
+ <button data-s="wallet">Offers</button>
+ <button data-s="settings">Settings</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem('as_'+k))??d}catch(e){return d}},set:(k,v)=>localStorage.setItem('as_'+k,JSON.stringify(v))};
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2200)}
+
+/* navigation */
+function go(s){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('show',x.id==='s-'+s));
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('act',b.dataset.s===s));
+ if(s==='home')renderList();if(s==='wallet')renderWallets();window.scrollTo(0,0)}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.s));
+
+/* add form labels change by type */
+const LABELS={movie:['Movie name','Theatre & city','Show time','Tickets','Preferred row','e.g. Pushpa 3','e.g. PVR, Hyderabad'],
+ temple:['Seva / darshan name','Temple','Slot time','Pilgrims','Preferred slot','e.g. Special Entry Darshan','e.g. Tirumala'],
+ bus:['Route','Operator (optional)','Departure time','Seats','Seat preference','e.g. Hyderabad to Bengaluru','e.g. Orange Travels'],
+ train:['Train name or number','From → To','Class','Passengers','Berth preference','e.g. 12785 Kacheguda Exp','e.g. KCG → SBC'],
+ flight:['Route','Airline (optional)','Departure time','Passengers','Seat preference','e.g. HYD → DEL','e.g. IndiGo']};
+$('f-type').onchange=()=>{const L=LABELS[$('f-type').value];
+ ['l-name','l-place','l-time','l-count','l-pref'].forEach((id,i)=>$(id).textContent=L[i]);
+ $('f-name').placeholder=L[5];$('f-place').placeholder=L[6]};
+
+/* watches */
+const ICON={movie:'Movie',temple:'Temple',bus:'Bus',train:'Train',flight:'Flight'};
+function ago(ts){if(!ts)return 'not checked yet';const m=Math.round((Date.now()-ts)/60000);return m<1?'just now':m+' min ago'}
+function renderList(){const w=store.get('watches',[]);
+ const active=w.filter(x=>x.active).length;
+ $('subtitle').textContent=active?`Watching ${active} booking${active>1?'s':''} for you.`:"You'll know the moment booking opens.";
+ if(!w.length){$('list').innerHTML='<div class="empty">No watches yet.<br>Tap <b>Add</b> to watch your first booking.</div>';return}
+ $('list').innerHTML=w.map((x,i)=>`<div class="watch"><div class="top"><div><b>${esc(x.name)}</b>
+  <div class="meta">${ICON[x.type]} · ${esc(x.place)}${x.date?' · '+x.date:''}${x.time?' · '+esc(x.time):''}<br>
+  ${x.count} ${x.type==='movie'?'tickets':'people'}${x.pref?' · prefers '+esc(x.pref):''}${x.backup?'<br>Backups: '+esc(x.backup):''}<br>
+  Last checked: ${ago(x.checked)}</div></div>
+  <span class="pill ${x.active?'on':'off'}">${x.active?'Watching':'Stopped'}</span></div>
+  <div class="row"><button data-i="${i}" class="tog">${x.active?'Stop':'Resume'}</button>
+  ${x.link?`<button data-l="${esc(x.link)}" class="open">Open booking page</button>`:''}
+  <button data-i="${i}" class="del danger">Delete</button></div></div>`).join('');
+ document.querySelectorAll('.tog').forEach(b=>b.onclick=()=>{const w=store.get('watches',[]);w[b.dataset.i].active=!w[b.dataset.i].active;store.set('watches',w);renderList()});
+ document.querySelectorAll('.del').forEach(b=>b.onclick=()=>{if(!confirm('Delete this watch?'))return;const w=store.get('watches',[]);w.splice(b.dataset.i,1);store.set('watches',w);renderList()});
+ document.querySelectorAll('.open').forEach(b=>b.onclick=()=>window.open(b.dataset.l,'_blank'))}
+function esc(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+$('saveBtn').onclick=()=>{const name=$('f-name').value.trim(),place=$('f-place').value.trim();
+ if(!name||!place){toast('Please fill in the name and place');return}
+ const link=$('f-link').value.trim();if(link&&!/^https:\/\//.test(link)){toast('Link must start with https://');return}
+ const w=store.get('watches',[]);
+ w.unshift({id:Date.now(),type:$('f-type').value,name,place,date:$('f-date').value,time:$('f-time').value.trim(),
+  count:+$('f-count').value,pref:$('f-pref').value.trim(),backup:$('f-backup').value.trim(),link,active:true,created:Date.now(),checked:null});
+ store.set('watches',w);['f-name','f-place','f-date','f-time','f-pref','f-backup','f-link'].forEach(id=>$(id).value='');
+ toast('Watch saved');go('home')};
+
+/* wallets + offers (sample public offers) */
+const WALLETS=['HDFC Credit Card','ICICI Debit Card','Kotak Card','SBI Card','Axis Card','Paytm','Amazon Pay','PhonePe','UPI (any app)'];
+const OFFERS={'HDFC Credit Card':'25% off movies, up to ₹150','Kotak Card':'Buy 1 Get 1 on movies, up to ₹250','ICICI Debit Card':'₹100 off on 2+ tickets','Paytm':'10% cashback, up to ₹75','Amazon Pay':'Flat ₹50 off','SBI Card':'10% off bus tickets, up to ₹200','Axis Card':'15% off flights, up to ₹1,000'};
+function renderWallets(){const mine=store.get('wallets',['UPI (any app)']);
+ $('wallets').innerHTML=WALLETS.map(w=>`<label class="chip"><input type="checkbox" value="${w}" ${mine.includes(w)?'checked':''}>${w}</label>`).join('');
+ document.querySelectorAll('#wallets input').forEach(c=>c.onchange=()=>{store.set('wallets',[...document.querySelectorAll('#wallets input:checked')].map(x=>x.value));showTip()});showTip()}
+function showTip(){const mine=store.get('wallets',[]),hits=mine.filter(w=>OFFERS[w]);
+ $('offerTip').innerHTML=hits.length?'<b>Offers you may get:</b><br>'+hits.map(w=>`${w}: ${OFFERS[w]}`).join('<br>')+'<br><span style="color:var(--muted)">Sample offers for testing. Real offers change often.</span>':'Tick a card or wallet to see matching offers.'}
+
+/* settings */
+function loadSettings(){const s=store.get('settings',{});$('set-topic').value=s.topic||'';$('set-q1').value=s.q1||'23:00';$('set-q2').value=s.q2||'07:00';$('set-urgent').checked=s.urgent!==false}
+$('setSave').onclick=()=>{const t=$('set-topic').value.trim();if(t&&!/^[A-Za-z0-9_-]{6,64}$/.test(t)){toast('Topic: letters, numbers, - or _ only (6+)');return}
+ store.set('settings',{topic:t,q1:$('set-q1').value,q2:$('set-q2').value,urgent:$('set-urgent').checked});toast('Settings saved')};
+$('testBtn').onclick=async()=>{const t=store.get('settings',{}).topic;if(!t){toast('Save your ntfy topic first');return}
+ try{await fetch('https://ntfy.sh/'+encodeURIComponent(t),{method:'POST',body:'Test from your Auto Scheduler app. Alerts are working!',headers:{Title:'Auto Scheduler test',Priority:'high'}});toast('Test alert sent. Check your phone')}
+ catch(e){toast('Could not send. Check your internet')}};
+$('wipeBtn').onclick=()=>{if(!confirm('Delete all watches, wallets and settings from this phone?'))return;
+ ['watches','wallets','settings'].forEach(k=>localStorage.removeItem('as_'+k));loadSettings();renderList();toast('All data deleted')};
+
+/* install as app */
+let deferred;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('installBtn').style.display='block'});
+$('installBtn').onclick=async()=>{if(!deferred)return;deferred.prompt();await deferred.userChoice;deferred=null;$('installBtn').style.display='none'};
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+loadSettings();renderList();
+</script>
+</body></html>
